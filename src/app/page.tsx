@@ -8,6 +8,7 @@ import Marketplace from "@/components/Marketplace";
 import LogisticsHub from "@/components/LogisticsHub";
 import PriceTrends from "@/components/PriceTrends";
 import CropDoctor from "@/components/CropDoctor";
+import AuthPortal from "@/components/AuthPortal";
 import { 
   Sprout, 
   TrendingUp, 
@@ -71,6 +72,14 @@ const initialListings: CropListing[] = [
 ];
 
 export default function Home() {
+  // Session Authentication state
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [currentUser, setCurrentUser] = useState<{
+    name: string;
+    emailOrPhone: string;
+    role: UserRole;
+  } | null>(null);
+
   const [activeRole, setActiveRole] = useState<UserRole>("farmer");
   const [listings, setListings] = useState<CropListing[]>(initialListings);
   const [orders, setOrders] = useState<EscrowOrder[]>([]);
@@ -94,6 +103,30 @@ export default function Home() {
     }, 6000);
   };
 
+  // Sign In / Authenticate
+  const handleLogin = (role: UserRole, name: string, emailOrPhone: string) => {
+    setCurrentUser({ name, emailOrPhone, role });
+    setIsAuthenticated(true);
+    setActiveRole(role); // Auto-navigate to their primary dashboard workspace!
+
+    showNotification(
+      "Authenticated Successfully!",
+      `Welcome back, ${name}. Loaded active ${role} wallet profile.`,
+      "success"
+    );
+  };
+
+  // Sign Out
+  const handleSignOut = () => {
+    setIsAuthenticated(false);
+    setCurrentUser(null);
+    showNotification(
+      "Signed Out",
+      "Successfully terminated active agritech wallet session.",
+      "info"
+    );
+  };
+
   // Farmer publishes new yield listing callback
   const handleAddListing = (
     newListing: Omit<CropListing, "id" | "farmerId" | "farmerName" | "farmerPhone" | "status">
@@ -103,8 +136,8 @@ export default function Home() {
       ...newListing,
       id: listId,
       farmerId: "FARM_FENI_77", // Linked to default farmer profile
-      farmerName: "Abul Kalam",
-      farmerPhone: "01712345678",
+      farmerName: currentUser ? currentUser.name : "Abul Kalam",
+      farmerPhone: currentUser ? currentUser.emailOrPhone : "01712345678",
       status: "available"
     };
 
@@ -135,8 +168,8 @@ export default function Home() {
       id: orderId,
       listingId,
       buyerId: "MERCH_DHK_44",
-      buyerName: "Shwapno Supermarket Corp",
-      buyerPhone: "01998877665",
+      buyerName: currentUser ? currentUser.name : "Shwapno Supermarket Corp",
+      buyerPhone: currentUser ? currentUser.emailOrPhone : "01998877665",
       farmerId: activeList.farmerId,
       farmerName: activeList.farmerName,
       cropType: activeList.cropType,
@@ -203,6 +236,11 @@ export default function Home() {
     );
   };
 
+  // Render Login page if Guest session
+  if (!isAuthenticated) {
+    return <AuthPortal onLogin={handleLogin} />;
+  }
+
   return (
     <main className="min-h-screen bg-slateforest-900 bg-dot-grid flex flex-col">
       
@@ -236,7 +274,7 @@ export default function Home() {
       )}
 
       {/* Main Layout Portal Shell */}
-      <div className="flex flex-col lg:flex-row flex-1 p-4 lg:p-6 gap-6 max-w-7xl w-full mx-auto">
+      <div className="flex flex-col lg:flex-row flex-1 p-4 lg:p-6 gap-6 max-w-7xl w-full mx-auto animate-fade-in-up">
         
         {/* SIDEBAR NAVIGATION */}
         <Sidebar 
@@ -245,6 +283,8 @@ export default function Home() {
           farmerBalance={farmerBalance}
           farmerPending={farmerPending}
           logisticsBalance={logisticsBalance}
+          currentUser={currentUser}
+          onSignOut={handleSignOut}
         />
 
         {/* WORKSPACE AREA */}

@@ -7,7 +7,8 @@ import {
   TrendingUp, 
   Activity, 
   Globe, 
-  ShieldAlert 
+  LogOut,
+  User
 } from "lucide-react";
 
 interface SidebarProps {
@@ -16,6 +17,8 @@ interface SidebarProps {
   farmerBalance: number;
   farmerPending: number;
   logisticsBalance: number;
+  currentUser: { name: string; emailOrPhone: string; role: UserRole } | null;
+  onSignOut: () => void;
 }
 
 export default function Sidebar({ 
@@ -23,7 +26,9 @@ export default function Sidebar({
   onRoleChange, 
   farmerBalance, 
   farmerPending,
-  logisticsBalance 
+  logisticsBalance,
+  currentUser,
+  onSignOut
 }: SidebarProps) {
   
   const roles = [
@@ -86,7 +91,7 @@ export default function Sidebar({
       </div>
 
       {/* Role Switcher Grid */}
-      <div className="flex flex-col gap-3 mb-8">
+      <div className="flex flex-col gap-3 mb-6">
         {roles.map((role) => {
           const Icon = role.icon;
           const isActive = activeRole === role.id;
@@ -117,7 +122,31 @@ export default function Sidebar({
       </div>
 
       {/* Dynamic Role Status Telemetry */}
-      <div className="mt-auto pt-6 border-t border-slateforest-700/50 flex flex-col gap-4">
+      <div className="mt-auto pt-4 border-t border-slateforest-700/50 flex flex-col gap-4">
+        
+        {/* User profile details block */}
+        {currentUser && (
+          <div className="bg-slateforest-900/40 border border-slateforest-700/30 rounded-xl p-3.5 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-agri-500/10 border border-agri-500/20 flex items-center justify-center font-bold text-agri-400 text-sm">
+                {currentUser.name.split(" ")[0][0]}
+              </div>
+              <div className="max-w-[130px] truncate text-xs">
+                <span className="font-bold text-white block truncate">{currentUser.name}</span>
+                <span className="text-[10px] text-slateforest-400 block truncate">{currentUser.emailOrPhone}</span>
+              </div>
+            </div>
+
+            <button
+              onClick={onSignOut}
+              title="Sign Out"
+              className="p-2 rounded-lg border border-slateforest-700 hover:border-red-500/40 bg-slateforest-900 hover:bg-red-500/10 text-slateforest-400 hover:text-red-400 cursor-pointer transition-all active:scale-90"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
         <div className="bg-slateforest-900/60 rounded-xl p-4 border border-slateforest-700/30">
           <div className="flex items-center gap-2 mb-3">
             <Activity className="w-4 h-4 text-agri-400" />
