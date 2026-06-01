@@ -10,9 +10,13 @@ import {
   CheckCircle,
   HelpCircle,
   TrendingUp,
-  ShoppingBag
+  ShoppingBag,
+  LogOut,
+  User,
+  ShieldCheck
 } from "lucide-react";
 import PaymentGateway from "./PaymentGateway";
+import AuthPortal from "./AuthPortal"; // Import your authentication component
 
 interface MarketplaceProps {
   listings: CropListing[];
@@ -20,6 +24,14 @@ interface MarketplaceProps {
 }
 
 export default function Marketplace({ listings, onOrderListing }: MarketplaceProps) {
+  // --- AUTHENTICATION STATE LAYERS ---
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(true); // Toggle to false to test the fallback login wall
+  const [currentUser, setCurrentUser] = useState({
+    name: "Zishan Al Mamun",
+    role: "B2B Corporate Buyer",
+    district: "Feni"
+  });
+
   const [searchTerm, setSearchTerm] = useState("");
   const [activeCategory, setActiveCategory] = useState<string>("all");
   const [activeDistrict, setActiveDistrict] = useState<string>("all");
@@ -61,8 +73,59 @@ export default function Marketplace({ listings, onOrderListing }: MarketplacePro
     }
   };
 
+  const handleLogOut = () => {
+    setIsAuthenticated(false);
+  };
+
+  const handleLoginSuccess = () => {
+    setIsAuthenticated(true);
+  };
+
+  // 🛡️ CONDITIONAL RENDER: If unauthorized, swap the whole view out for your AuthPortal portal screen
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-[70vh] flex items-center justify-center p-4 animate-fade-in-up">
+        <div className="w-full max-w-md">
+          <AuthPortal />
+          <button 
+            onClick={handleLoginSuccess}
+            className="mt-4 text-xs text-center w-full text-agri-400 underline hover:text-agri-300 cursor-pointer"
+          >
+            Bypass & Force Sign In (Demo Mode)
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-6 animate-fade-in-up">
+      
+      {/* 🔐 NEW ACCENT SECURITY HEADER (Log Out / Sign In Meta Tracker) */}
+      <div className="w-full glass-card p-4 bg-slateforest-900/80 border border-slateforest-800 flex flex-col sm:flex-row items-center justify-between gap-4 rounded-2xl">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-agri-500/10 border border-agri-500/30 flex items-center justify-center text-agri-400">
+            <User className="w-5 h-5" />
+          </div>
+          <div>
+            <div className="flex items-center gap-1.5">
+              <h4 className="text-sm font-bold text-white tracking-wide">{currentUser.name}</h4>
+              <span className="text-[10px] bg-agri-500/20 text-agri-400 font-extrabold px-1.5 py-0.5 rounded flex items-center gap-0.5 border border-agri-500/30">
+                <ShieldCheck className="w-3 h-3" /> {currentUser.role}
+              </span>
+            </div>
+            <p className="text-[11px] text-slateforest-500">Active Procurement Zone: {currentUser.district}, Bangladesh</p>
+          </div>
+        </div>
+
+        <button
+          onClick={handleLogOut}
+          className="flex items-center gap-2 px-4 py-2 text-xs font-bold text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl hover:bg-red-500 hover:text-white transition-all duration-200 cursor-pointer"
+        >
+          <LogOut className="w-4 h-4" />
+          Sign Out (লগ আউট)
+        </button>
+      </div>
       
       {/* FILTER & SEARCH HUB */}
       <div className="glass-card p-6 bg-slateforest-800/60 flex flex-col gap-4 border-slateforest-700/50">

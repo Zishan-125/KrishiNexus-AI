@@ -2,17 +2,17 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "KrishiNexus AI - Agritech Supply Chain & Yield Optimization Hub",
-  description: "B2B2C direct-to-market agritech ecosystem featuring intelligent crop disease diagnostics and multi-signature payment escrows.",
+  title: "KrishiNexus AI",
+  description: "B2B Agritech Supply-Chains and Neural Yield Diagnostics",
 };
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning={true}>
       <body className="antialiased">
         {children}
       </body>

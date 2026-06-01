@@ -1,25 +1,26 @@
+
+
 "use client";
 
-import React, { useState } from "react";
-import { UserRole, CropListing, EscrowOrder, CropCategory } from "@/types";
+import React, { useState, useEffect } from "react";
+import { UserRole, CropListing, EscrowOrder } from "@/types";
 import Sidebar from "@/components/Sidebar";
 import FarmerPortal from "@/components/FarmerPortal";
 import Marketplace from "@/components/Marketplace";
 import LogisticsHub from "@/components/LogisticsHub";
 import PriceTrends from "@/components/PriceTrends";
 import CropDoctor from "@/components/CropDoctor";
-import AuthPortal from "@/components/AuthPortal";
 import { 
-  Sprout, 
-  TrendingUp, 
-  Activity, 
-  HelpCircle,
   BellRing,
-  CheckCircle2,
-  X
+  X,
+  LayoutDashboard,
+  ShoppingBag,
+  Truck,
+  TrendingUp,
+  Activity
 } from "lucide-react";
 
-// Pre-seeded high-fidelity listings
+// Pre-seeded high-fidelity structural listings to guarantee dashboards populate
 const initialListings: CropListing[] = [
   {
     id: "LIST_001",
@@ -39,9 +40,9 @@ const initialListings: CropListing[] = [
   },
   {
     id: "LIST_002",
-    farmerId: "FARM_FENI_89",
-    farmerName: "Mofizul Islam",
-    farmerPhone: "01887654321",
+    farmerId: "FARM_FENI_77",
+    farmerName: "Abul Kalam",
+    farmerPhone: "01712345678",
     cropType: "potato",
     variety: "Diamant Holland Potato (আলু)",
     quantity: 1200,
@@ -72,62 +73,49 @@ const initialListings: CropListing[] = [
 ];
 
 export default function Home() {
-  // Session Authentication state
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  // SSR Hydration Mount Check Gate
+  const [hasMounted, setHasMounted] = useState<boolean>(false);
+
+  // Auto-Login Profile Configuration: Pre-seeded explicitly as Abul Kalam to match the items dataset
   const [currentUser, setCurrentUser] = useState<{
     name: string;
     emailOrPhone: string;
     role: UserRole;
-  } | null>(null);
+  } | null>({
+    name: "Abul Kalam",
+    emailOrPhone: "01712345678",
+    role: "farmer"
+  });
 
   const [activeRole, setActiveRole] = useState<UserRole>("farmer");
+  const [activeTab, setActiveTab] = useState<string>("dashboard");
+  
+  // Data State Arrays
   const [listings, setListings] = useState<CropListing[]>(initialListings);
   const [orders, setOrders] = useState<EscrowOrder[]>([]);
   
-  // Simulated Wallet telemetry
+  // Wallet Telemetry Metrics loaded with baseline data
   const [farmerBalance, setFarmerBalance] = useState<number>(45000);
   const [farmerPending, setFarmerPending] = useState<number>(0);
   const [logisticsBalance, setLogisticsBalance] = useState<number>(3200);
   
-  // Real-time Notification system
   const [notification, setNotification] = useState<{
     title: string;
     msg: string;
     type: "success" | "info" | "warning";
   } | null>(null);
 
+  useEffect(() => {
+    setHasMounted(true);
+  }, []);
+
   const showNotification = (title: string, msg: string, type: "success" | "info" | "warning" = "info") => {
     setNotification({ title, msg, type });
     setTimeout(() => {
       setNotification(null);
-    }, 6000);
+    }, 5000);
   };
 
-  // Sign In / Authenticate
-  const handleLogin = (role: UserRole, name: string, emailOrPhone: string) => {
-    setCurrentUser({ name, emailOrPhone, role });
-    setIsAuthenticated(true);
-    setActiveRole(role); // Auto-navigate to their primary dashboard workspace!
-
-    showNotification(
-      "Authenticated Successfully!",
-      `Welcome back, ${name}. Loaded active ${role} wallet profile.`,
-      "success"
-    );
-  };
-
-  // Sign Out
-  const handleSignOut = () => {
-    setIsAuthenticated(false);
-    setCurrentUser(null);
-    showNotification(
-      "Signed Out",
-      "Successfully terminated active agritech wallet session.",
-      "info"
-    );
-  };
-
-  // Farmer publishes new yield listing callback
   const handleAddListing = (
     newListing: Omit<CropListing, "id" | "farmerId" | "farmerName" | "farmerPhone" | "status">
   ) => {
@@ -135,7 +123,7 @@ export default function Home() {
     const freshListing: CropListing = {
       ...newListing,
       id: listId,
-      farmerId: "FARM_FENI_77", // Linked to default farmer profile
+      farmerId: "FARM_FENI_77", 
       farmerName: currentUser ? currentUser.name : "Abul Kalam",
       farmerPhone: currentUser ? currentUser.emailOrPhone : "01712345678",
       status: "available"
@@ -144,32 +132,26 @@ export default function Home() {
     setListings([freshListing, ...listings]);
     showNotification(
       "Listing Published Successfully!",
-      `Your ${newListing.quantity} Kg of ${newListing.cropType} (${newListing.variety}) is now live on the B2B Marketplace.`,
+      `Your ${newListing.quantity} Kg of ${newListing.cropType} is now live on the B2B Marketplace.`,
       "success"
     );
   };
 
-  // Merchant places order callback -> Locks money into Escrow
-  const handleOrderListing = (
-    listingId: string,
-    gateway: "bkash" | "nagad" | "upay" | "card"
-  ) => {
+  const handleOrderListing = (listingId: string, gateway: "bkash" | "nagad" | "upay" | "card") => {
     const activeList = listings.find((l) => l.id === listingId);
     if (!activeList) return;
 
-    // Update listing status
     setListings(listings.map(l => l.id === listingId ? { ...l, status: "escrowed" } : l));
 
-    // Create Escrow Order
     const orderId = `ORD_${Math.floor(1000 + Math.random() * 9000)}`;
-    const verificationCode = Math.floor(1000 + Math.random() * 9000).toString(); // 4 digit QR PIN
+    const verificationCode = Math.floor(1000 + Math.random() * 9000).toString();
     
     const newOrder: EscrowOrder = {
       id: orderId,
       listingId,
       buyerId: "MERCH_DHK_44",
-      buyerName: currentUser ? currentUser.name : "Shwapno Supermarket Corp",
-      buyerPhone: currentUser ? currentUser.emailOrPhone : "01998877665",
+      buyerName: "Shwapno Supermarket Corp",
+      buyerPhone: "01998877665",
       farmerId: activeList.farmerId,
       farmerName: activeList.farmerName,
       cropType: activeList.cropType,
@@ -184,132 +166,149 @@ export default function Home() {
     };
 
     setOrders([newOrder, ...orders]);
-    
-    // Add amount to Farmer's Pending Escrow wallet
     setFarmerPending(prev => prev + activeList.totalAmount);
 
     showNotification(
-      "SSLCommerz Escrow Established!",
-      `BDT ${activeList.totalAmount.toLocaleString()} has been locked in escrow for Order ${orderId}. Logistics notified for Feni pickup.`,
+      "Escrow Established!",
+      `BDT ${activeList.totalAmount.toLocaleString()} locked securely for Order ${orderId}.`,
       "success"
     );
   };
 
-  // Driver claims transit task callback
   const handleStartTransit = (orderId: string) => {
     setOrders(orders.map(o => o.id === orderId ? { ...o, deliveryStatus: "transit", logisticsId: "LOG_FENI_09" } : o));
-    
-    showNotification(
-      "Logistics Task Claimed!",
-      `Driver assigned to Order ${orderId}. Cargo is now moving from Feni to Dhaka.`,
-      "info"
-    );
+    showNotification("Logistics Task Claimed!", "Cargo is in transit.", "info");
   };
 
-  // Driver delivers & verifies QR Code -> Webhook triggers Escrow Release to Farmer
   const handleConfirmDelivery = (orderId: string) => {
     const activeOrder = orders.find(o => o.id === orderId);
     if (!activeOrder) return;
 
-    // Update order status
-    setOrders(orders.map(o => o.id === orderId ? { 
-      ...o, 
-      paymentStatus: "released", 
-      deliveryStatus: "delivered" 
-    } : o));
-
-    // Update listing status
+    setOrders(orders.map(o => o.id === orderId ? { ...o, paymentStatus: "released", deliveryStatus: "delivered" } : o));
     setListings(listings.map(l => l.id === activeOrder.listingId ? { ...l, status: "completed" } : l));
 
-    // Webhook wallet adjustments
     const cargoValue = activeOrder.totalAmount;
-    const logisticsFee = Math.round(cargoValue * 0.08); // 8% fee
+    const logisticsFee = Math.round(cargoValue * 0.08);
 
     setFarmerPending(prev => Math.max(0, prev - cargoValue));
     setFarmerBalance(prev => prev + cargoValue);
     setLogisticsBalance(prev => prev + logisticsFee);
 
-    showNotification(
-      "Webhook Released: Escrow Dispatched!",
-      `Delivery verified! Webhook released BDT ${cargoValue.toLocaleString()} to Farmer wallet and BDT ${logisticsFee.toLocaleString()} to Logistics partner.`,
-      "success"
-    );
+    showNotification("Webhook Released!", "Funds successfully dispatched to native wallets.", "success");
   };
 
-  // Render Login page if Guest session
-  if (!isAuthenticated) {
-    return <AuthPortal onLogin={handleLogin} />;
+  const handleRoleTransition = (targetRole: UserRole) => {
+    setActiveRole(targetRole);
+    if (targetRole === "farmer") setActiveTab("dashboard");
+    else if (targetRole === "merchant") setActiveTab("marketplace");
+    else if (targetRole === "logistics") setActiveTab("logistics");
+    else if (targetRole === "admin") setActiveTab("trends");
+  };
+
+  if (!hasMounted) {
+    return <div className="min-h-screen bg-[#0b1315]" />;
   }
 
   return (
-    <main className="min-h-screen bg-slateforest-900 bg-dot-grid flex flex-col">
+    <main className="min-h-screen bg-[#0b1315] text-slate-100 flex flex-col">
       
-      {/* Dynamic Notification Toast */}
+      {/* Toast Notification Mount Target */}
       {notification && (
-        <div className="fixed bottom-6 right-6 z-50 animate-fade-in-up w-full max-w-md">
-          <div className={`p-4 rounded-xl border shadow-2xl backdrop-blur-md flex items-start gap-3 relative ${
-            notification.type === "success" 
-              ? "bg-agri-500/10 border-agri-500/30 text-agri-400" 
-              : notification.type === "warning"
-              ? "bg-market-gold/10 border-market-gold/20 text-market-gold"
-              : "bg-blue-500/10 border-blue-500/30 text-blue-400"
-          }`}>
-            <BellRing className="w-5 h-5 shrink-0 mt-0.5 animate-bounce" />
+        <div className="fixed bottom-6 right-6 z-50 w-full max-w-md animate-fade-in-up">
+          <div className={`p-4 rounded-xl border backdrop-blur-md flex items-start gap-3 relative bg-emerald-950/80 border-emerald-500/30 text-emerald-400`}>
+            <BellRing className="w-5 h-5 shrink-0 mt-0.5" />
             <div>
-              <h4 className="text-xs font-extrabold uppercase tracking-wider text-white">
-                {notification.title}
-              </h4>
-              <p className="text-xs text-slateforest-200 mt-1 leading-relaxed">
-                {notification.msg}
-              </p>
+              <h4 className="text-xs font-bold uppercase tracking-wider text-white">{notification.title}</h4>
+              <p className="text-xs text-slate-300 mt-1">{notification.msg}</p>
             </div>
-            <button 
-              onClick={() => setNotification(null)}
-              className="absolute right-3 top-3 text-slateforest-400 hover:text-white cursor-pointer"
-            >
+            <button onClick={() => setNotification(null)} className="absolute right-3 top-3 text-slate-400 hover:text-white">
               <X className="w-4 h-4" />
             </button>
           </div>
         </div>
       )}
 
-      {/* Main Layout Portal Shell */}
-      <div className="flex flex-col lg:flex-row flex-1 p-4 lg:p-6 gap-6 max-w-7xl w-full mx-auto animate-fade-in-up">
+      {/* CORE FRAMEWORK CONTAINER: 2-Column Responsive Flex Grid layout */}
+      <div className="flex flex-col md:flex-row flex-1 w-full min-h-screen">
         
-        {/* SIDEBAR NAVIGATION */}
-        <Sidebar 
-          activeRole={activeRole} 
-          onRoleChange={setActiveRole}
-          farmerBalance={farmerBalance}
-          farmerPending={farmerPending}
-          logisticsBalance={logisticsBalance}
-          currentUser={currentUser}
-          onSignOut={handleSignOut}
-        />
+        {/* SIDEBAR PANEL BAR ANCHOR */}
+        <div className="w-full md:w-64 shrink-0 border-b md:border-b-0 md:border-r border-slate-800 bg-[#070d0e]">
+          <Sidebar 
+            activeRole={activeRole} 
+            onRoleChange={handleRoleTransition}
+            farmerBalance={farmerBalance}
+            farmerPending={farmerPending}
+            logisticsBalance={logisticsBalance}
+            currentUser={currentUser}
+            onSignOut={() => setCurrentUser(null)}
+          />
+        </div>
 
-        {/* WORKSPACE AREA */}
-        <div className="flex-1 flex flex-col gap-6">
+        {/* CONTROLLER WORKSPACE WINDOW */}
+        <div className="flex-1 flex flex-col p-4 lg:p-6 gap-6 overflow-x-hidden">
           
-          {/* Main workspace section based on switch role */}
+          {/* Workspace Switcher Component Header */}
+          <div className="bg-[#070d0e] border border-slate-800/80 p-2 rounded-xl flex items-center gap-2 overflow-x-auto shadow-lg">
+            <span className="text-[10px] uppercase tracking-wider font-extrabold text-slate-500 px-3 border-r border-slate-800 shrink-0">
+              Active Module:
+            </span>
+            <button 
+              onClick={() => { setActiveTab("dashboard"); setActiveRole("farmer"); }}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg font-semibold transition-all shrink-0 ${activeTab === "dashboard" ? "bg-emerald-600 text-white shadow" : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/40"}`}
+            >
+              <LayoutDashboard className="w-3.5 h-3.5" />
+              Farmer Dashboard
+            </button>
+            <button 
+              onClick={() => { setActiveTab("marketplace"); setActiveRole("merchant"); }}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg font-semibold transition-all shrink-0 ${activeTab === "marketplace" ? "bg-emerald-600 text-white shadow" : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/40"}`}
+            >
+              <ShoppingBag className="w-3.5 h-3.5" />
+              B2B Marketplace
+            </button>
+            <button 
+              onClick={() => { setActiveTab("logistics"); setActiveRole("logistics"); }}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg font-semibold transition-all shrink-0 ${activeTab === "logistics" ? "bg-emerald-600 text-white shadow" : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/40"}`}
+            >
+              <Truck className="w-3.5 h-3.5" />
+              Logistics Hub
+            </button>
+            <button 
+              onClick={() => { setActiveTab("trends"); setActiveRole("admin"); }}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg font-semibold transition-all shrink-0 ${activeTab === "trends" ? "bg-emerald-600 text-white shadow" : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/40"}`}
+            >
+              <TrendingUp className="w-3.5 h-3.5" />
+              Market Trends
+            </button>
+            <button 
+              onClick={() => setActiveTab("doctor")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg font-semibold transition-all shrink-0 ${activeTab === "doctor" ? "bg-emerald-600 text-white shadow" : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/40"}`}
+            >
+              <Activity className="w-3.5 h-3.5" />
+              Neural Crop Doctor
+            </button>
+          </div>
+
+          {/* Conditional Sub-View Workspace Gateway */}
           <div className="flex-1">
-            {activeRole === "farmer" && (
+            {activeTab === "dashboard" && (
               <FarmerPortal 
                 listings={listings.filter(l => l.farmerId === "FARM_FENI_77")}
                 onAddListing={handleAddListing}
-                orders={orders.filter(o => o.farmerId === "FARM_FENI_77")}
+                orders={orders}
                 walletBalance={farmerBalance}
                 pendingEscrow={farmerPending}
               />
             )}
 
-            {activeRole === "merchant" && (
+            {activeTab === "marketplace" && (
               <Marketplace 
                 listings={listings}
                 onOrderListing={handleOrderListing}
               />
             )}
 
-            {activeRole === "logistics" && (
+            {activeTab === "logistics" && (
               <LogisticsHub 
                 orders={orders}
                 onStartTransit={handleStartTransit}
@@ -318,32 +317,23 @@ export default function Home() {
               />
             )}
 
-            {activeRole === "admin" && (
-              <PriceTrends />
-            )}
+            {activeTab === "trends" && <PriceTrends />}
+            {activeTab === "doctor" && <CropDoctor />}
           </div>
 
-          {/* DUAL PURPOSE CENTERPIECE: Global AI Crop Doctor Panel */}
-          {activeRole !== "admin" && (
-            <div className="border-t border-slateforest-800/80 pt-6">
+          {/* Permanent lower contextual footer layout mounting */}
+          {activeTab !== "trends" && activeTab !== "doctor" && (
+            <div className="border-t border-slate-800/80 pt-6">
               <CropDoctor />
             </div>
           )}
 
         </div>
-
       </div>
 
-      {/* FOOTER */}
-      <footer className="py-6 border-t border-slateforest-800/50 mt-auto bg-slateforest-950/40 text-center text-xs text-slateforest-500">
-        <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-4">
-          <p>© 2026 KrishiNexus AI. Empowering regional farmers via direct B2B supply-chains and neural yield diagnostics.</p>
-          <div className="flex gap-4">
-            <span className="hover:text-agri-400 cursor-pointer">Security Protocol</span>
-            <span className="hover:text-agri-400 cursor-pointer">SSL Sandbox Escrow</span>
-            <span className="hover:text-agri-400 cursor-pointer font-bold text-agri-500">Feni Node #4</span>
-          </div>
-        </div>
+      {/* Footer System info */}
+      <footer className="py-4 border-t border-slate-800 bg-[#070d0e] text-center text-[11px] text-slate-500 shrink-0">
+        <p>© 2026 KrishiNexus AI. Secure B2B Supply-Chains and Neural Yield Diagnostics. | Feni Node Active</p>
       </footer>
     </main>
   );
